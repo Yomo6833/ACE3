@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <random>
 #include <cmath>
+#include <chrono>
 
 #define DELTA_T 0.02f
 #define GRAVITY 9.80665f
@@ -46,8 +47,8 @@ struct Bullet {
     double altitude;
     double humidity;
     double overcast;
-    double startTime;
-    double lastFrame;
+    std::chrono::high_resolution_clock::time_point startTime;
+    std::chrono::high_resolution_clock::time_point lastFrame;
     double bcDegradation;
     unsigned randSeed;
     std::default_random_engine randGenerator;
@@ -343,7 +344,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         double altitude = 0.0;
         double humidity = 0.0;
         double overcast = 0.0;
-        double tickTime = 0.0;
+        std::chrono::high_resolution_clock::time_point tickTime = std::chrono::high_resolution_clock::now();
 
         index = strtol(strtok_s(NULL, ":", &next_token), NULL, 10);
         airFriction = strtod(strtok_s(NULL, ":", &next_token), NULL);
@@ -382,7 +383,6 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         altitude = strtod(strtok_s(NULL, ":", &next_token), NULL);
         humidity = strtod(strtok_s(NULL, ":", &next_token), NULL);
         overcast = strtod(strtok_s(NULL, ":", &next_token), NULL);
-        tickTime = strtod(strtok_s(NULL, ":", &next_token), NULL);
 
         while (index >= bulletDatabase.size()) {
             Bullet bullet;
@@ -405,8 +405,8 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         bulletDatabase[index].altitude = altitude;
         bulletDatabase[index].humidity = humidity;
         bulletDatabase[index].overcast = overcast;
-        bulletDatabase[index].startTime = tickTime;
-        bulletDatabase[index].lastFrame = tickTime;
+        bulletDatabase[index].startTime = std::chrono::high_resolution_clock::now();
+        bulletDatabase[index].lastFrame = std::chrono::high_resolution_clock::now();
         bulletDatabase[index].bcDegradation = 1.0;
         bulletDatabase[index].randSeed = 0;
 
@@ -422,7 +422,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         char* windArray;
         double wind[3];
         double heightAGL = 0.0;
-        double tickTime = 0.0;
+        std::chrono::high_resolution_clock::time_point tickTime = std::chrono::high_resolution_clock::now();
 
         index = strtol(strtok_s(NULL, ":", &next_token), NULL, 10);
         velocityArray = strtok_s(NULL, ":", &next_token);
@@ -444,7 +444,6 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         wind[1] = strtod(strtok_s(NULL, ",", &token), NULL);
         wind[2] = strtod(strtok_s(NULL, ",", &token), NULL);
         heightAGL = strtod(strtok_s(NULL, ":", &next_token), NULL);
-        tickTime = strtod(strtok_s(NULL, ":", &next_token), NULL);
 
         if (bulletDatabase[index].randSeed == 0) {
             int angle = (int)round(atan2(velocity[0], velocity[1]) * 360 / M_PI);
@@ -467,8 +466,8 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         double drag = 0.0;
         double accelRef[3] = { 0.0, 0.0, 0.0 };
         double accel[3] = { 0.0, 0.0, 0.0 };
-        double TOF = tickTime - bulletDatabase[index].startTime;
-        double deltaT = tickTime - bulletDatabase[index].lastFrame;
+        double TOF = std::chrono::duration<double, std::chrono::seconds::period>(tickTime - bulletDatabase[index].startTime).count();
+        double deltaT = std::chrono::duration<double, std::chrono::seconds::period>(tickTime - bulletDatabase[index].lastFrame).count();
         double bulletSpeed = sqrt(pow(velocity[0], 2) + pow(velocity[1], 2) + pow(velocity[2], 2));
         double trueVelocity[3] = { 0.0, 0.0, 0.0 };
         double trueSpeed = 0.0;
