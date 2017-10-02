@@ -117,7 +117,7 @@ GVAR(lastFrameTime) = diag_tickTime;
 GVAR(lastBulletSpeed) = _muzzleVelocity;
 GVAR(airFriction) = _airFriction;
 toFixed 8;
-"ace_advanced_ballistics" callExtension format["new:%1:%2:%3:%4:%5:%6:%7:%8:%9:%10:%11:%12:%13:%14:%15:%16:%17:%18", GVAR(currentbulletID), _airFriction, _ballisticCoefficients, _velocityBoundaries, _atmosphereModel, _dragModel, _stabilityFactor, _twistDirection, _muzzleVelocity, 1, getPosASL _projectile, 0, 15, 0, 0, 0, CBA_missionTime];
+"ace_advanced_ballistics" callExtension format["new:%1:%2:%3:%4:%5:%6:%7:%8:%9:%10:%11:%12:%13:%14:%15:%16:%17:%18", GVAR(currentbulletID), _airFriction, _ballisticCoefficients, _velocityBoundaries, _atmosphereModel, _dragModel, _stabilityFactor, 0, _muzzleVelocity, 1, getPosASL _projectile, 0, 15, 0, 0, 0, CBA_missionTime];
 
 GVAR(allBullets) pushBack [_projectile, _caliber, _bulletTraceVisible, GVAR(currentbulletID)];
 
