@@ -69,7 +69,7 @@ if (GVAR(barrelLengthInfluenceEnabled)) then {
 
 _ammoTemperatureVelocityShift = 0;
 if (GVAR(ammoTemperatureEnabled)) then {
-    _temperature = ((getPosASL _unit) select 2) call EFUNC(weather,calculateTemperatureAtHeight);
+    _temperature = 15;
     _ammoTemperatureVelocityShift = ([_ammoTempMuzzleVelocityShifts, _temperature] call FUNC(calculateAmmoTemperatureVelocityShift));
 };
 
@@ -113,11 +113,14 @@ if (_caliber > 0 && _bulletLength > 0 && _bulletMass > 0 && _barrelTwist > 0) th
 
 GVAR(currentbulletID) = (GVAR(currentbulletID) + 1) % 10000;
 
-_aceTimeSecond = floor CBA_missionTime;
-"ace_advanced_ballistics" callExtension format["new:%1:%2:%3:%4:%5:%6:%7:%8:%9:%10:%11:%12:%13:%14:%15:%16:%17:%18", GVAR(currentbulletID), _airFriction, _ballisticCoefficients, _velocityBoundaries, _atmosphereModel, _dragModel, _stabilityFactor, _twistDirection, _muzzleVelocity, _transonicStabilityCoef, getPosASL _projectile, EGVAR(common,mapLatitude), EGVAR(weather,currentTemperature), EGVAR(common,mapAltitude), EGVAR(weather,currentHumidity), overcast, _aceTimeSecond, CBA_missionTime - _aceTimeSecond];
+GVAR(lastFrameTime) = diag_tickTime;
+GVAR(lastBulletSpeed) = _muzzleVelocity;
+GVAR(airFriction) = _airFriction;
+toFixed 8;
+"ace_advanced_ballistics" callExtension format["new:%1:%2:%3:%4:%5:%6:%7:%8:%9:%10:%11:%12:%13:%14:%15:%16:%17:%18", GVAR(currentbulletID), _airFriction, _ballisticCoefficients, _velocityBoundaries, _atmosphereModel, _dragModel, _stabilityFactor, _twistDirection, _muzzleVelocity, 1, getPosASL _projectile, 0, 15, 0, 0, 0, CBA_missionTime];
 
 GVAR(allBullets) pushBack [_projectile, _caliber, _bulletTraceVisible, GVAR(currentbulletID)];
 
 if (isNil QGVAR(BulletPFH)) then {
-    GVAR(BulletPFH) = [FUNC(handleFirePFH), GVAR(simulationInterval), []] call CBA_fnc_addPerFrameHandler;
+    GVAR(BulletPFH) = [FUNC(handleFirePFH), 0, []] call CBA_fnc_addPerFrameHandler;
 };

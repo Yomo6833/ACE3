@@ -39,6 +39,7 @@ struct Bullet {
     double twistDirection;
     double transonicStabilityCoef;
     double muzzleVelocity;
+    double lastBulletSpeed;
     std::vector<double> origin;
     double latitude;
     double temperature;
@@ -382,7 +383,6 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         humidity = strtod(strtok_s(NULL, ":", &next_token), NULL);
         overcast = strtod(strtok_s(NULL, ":", &next_token), NULL);
         tickTime = strtod(strtok_s(NULL, ":", &next_token), NULL);
-        tickTime += strtod(strtok_s(NULL, ":", &next_token), NULL);
 
         while (index >= bulletDatabase.size()) {
             Bullet bullet;
@@ -398,6 +398,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         bulletDatabase[index].twistDirection = twistDirection;
         bulletDatabase[index].transonicStabilityCoef = transonicStabilityCoef;
         bulletDatabase[index].muzzleVelocity = muzzleVelocity;
+        bulletDatabase[index].lastBulletSpeed = muzzleVelocity;
         bulletDatabase[index].origin = origin;
         bulletDatabase[index].latitude = latitude / 180 * M_PI;
         bulletDatabase[index].temperature = temperature;
@@ -444,7 +445,6 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         wind[2] = strtod(strtok_s(NULL, ",", &token), NULL);
         heightAGL = strtod(strtok_s(NULL, ":", &next_token), NULL);
         tickTime = strtod(strtok_s(NULL, ":", &next_token), NULL);
-        tickTime += strtod(strtok_s(NULL, ":", &next_token), NULL);
 
         if (bulletDatabase[index].randSeed == 0) {
             int angle = (int)round(atan2(velocity[0], velocity[1]) * 360 / M_PI);
@@ -469,7 +469,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         double accel[3] = { 0.0, 0.0, 0.0 };
         double TOF = tickTime - bulletDatabase[index].startTime;
         double deltaT = tickTime - bulletDatabase[index].lastFrame;
-        double bulletSpeed;
+        double bulletSpeed = sqrt(pow(velocity[0], 2) + pow(velocity[1], 2) + pow(velocity[2], 2));
         double trueVelocity[3] = { 0.0, 0.0, 0.0 };
         double trueSpeed = 0.0;
         double temperature = bulletDatabase[index].temperature - 0.0065 * position[2];
@@ -479,8 +479,6 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         double velocityOffset[3] = { 0.0, 0.0, 0.0 };
 
         bulletDatabase[index].lastFrame = tickTime;
-
-        bulletSpeed = sqrt(pow(velocity[0], 2) + pow(velocity[1], 2) + pow(velocity[2], 2));
 
         windSpeed = sqrt(pow(wind[0], 2) + pow(wind[1], 2) + pow(wind[2], 2));
         if (windSpeed > 0.1) {
@@ -546,7 +544,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         };
 
         if (bulletDatabase[index].ballisticCoefficients.size() == bulletDatabase[index].velocityBoundaries.size() + 1) {
-            dragRef = deltaT * bulletDatabase[index].airFriction * bulletSpeed * bulletSpeed;
+            dragRef = deltaT * bulletDatabase[index].airFriction * bulletDatabase[index].lastBulletSpeed * bulletDatabase[index].lastBulletSpeed;
 
             accelRef[0] = (velocity[0] / bulletSpeed) * dragRef;
             accelRef[1] = (velocity[1] / bulletSpeed) * dragRef;
@@ -579,7 +577,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
             double airFriction = bulletDatabase[index].airFriction * airDensity / STD_AIR_DENSITY_ICAO;
 
             if (airFriction != bulletDatabase[index].airFriction || windSpeed > 0) {
-                dragRef = deltaT * bulletDatabase[index].airFriction * bulletSpeed * bulletSpeed;
+                dragRef = deltaT * bulletDatabase[index].airFriction * bulletDatabase[index].lastBulletSpeed * bulletDatabase[index].lastBulletSpeed;
 
                 accelRef[0] = (velocity[0] / bulletSpeed) * dragRef;
                 accelRef[1] = (velocity[1] / bulletSpeed) * dragRef;
@@ -617,6 +615,8 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function)
         velocityOffset[0] += accel[0] * deltaT;
         velocityOffset[1] += accel[1] * deltaT;
         velocityOffset[2] += accel[2] * deltaT;
+
+        bulletDatabase[index].lastBulletSpeed = bulletSpeed;
 
         outputStr << "[" << velocityOffset[0] << "," << velocityOffset[1] << "," << velocityOffset[2] << "]";
         strncpy_s(output, outputSize, outputStr.str().c_str(), _TRUNCATE);
